@@ -10,4 +10,4 @@ Type "make" inside the source directory.
 
 Use
 ===
-Type "./thingRanker" in executable director.
+Type "./thingRanker" in executable directory.
