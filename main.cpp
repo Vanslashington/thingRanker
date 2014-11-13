@@ -10,8 +10,24 @@
 #include <list>
 #include <string>
 #include <deque>
+#include <algorithm>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
+
+
+// Forward declaration
+struct listObject;
+
+// Prototypes
+void displayList(const deque<listObject>& objectList);
+void displayHelp();
+void quickInsert(deque<listObject>& objectList);
+bool interactiveComp(const listObject& a, const listObject& b);
+void sortedInsert(deque<listObject>& objectList);
+void loadFile(deque<listObject>& objectList);
+void saveFile(const deque<listObject>& objectList);
 
 
 /*
@@ -26,6 +42,14 @@ struct listObject
         : label(label), index(maxIndex++)
     { }
 
+    /*
+        "Less Than" operator
+        This operator just calls the interactive compare function. I am
+        defining this function mainly so it can be used by STL sort.
+    */
+    bool operator<(const listObject& other) const
+        { return interactiveComp(*this, other); }
+
     // Members
     string label;
     int index;
@@ -37,18 +61,14 @@ struct listObject
 int listObject::maxIndex = 0;
 
 
-// Prototypes
-void displayList(const deque<listObject>& objectList);
-void displayHelp();
-void quickInsert(deque<listObject>& objectList);
-void sortedInsert(deque<listObject>& objectList);
-
-
 // Main
 int main()
 {
     // The list that will hold all the objects
     deque<listObject> objectList;
+
+    // Load the saved file
+    loadFile(objectList);
 
     // Main loop
     string command = "";
@@ -57,10 +77,20 @@ int main()
         // Execute the previously-entered command
         if(command == "h")
             displayHelp();
-        else if(command == "i")
+        else if(command == "qi")
             quickInsert(objectList);
-        else if(command == "s")
+        else if(command == "si")
             sortedInsert(objectList);
+        else if(command == "qs")
+            sort(objectList.begin(), objectList.end());
+        else if(command[0] == 'r')
+        {
+            stringstream comStream(command);
+            char trash;
+            int index;
+            comStream >> trash >> index;
+            objectList.erase(objectList.begin() + index);
+        }
         else if(command == "")
             { /* do nothing */ }
         else if(command == "q")
@@ -73,9 +103,12 @@ int main()
 
         // Prompt for a new command
         cout << "Type 'h' for help and commands." << endl;
-        cin >> command;
+        getline(cin, command);
     }
     while(command != "q");
+
+    // Save the list to the file
+    saveFile(objectList);
 
     return 0;
 }
@@ -115,8 +148,10 @@ void displayHelp()
     // Display menu
     cout << "Help and commands:" << endl
          << "h: Print this" << endl
-         << "i: Quick insert" << endl
-         << "s: Sorted insert" << endl
+         << "qi: Quick insert" << endl
+         << "si: Sorted insert" << endl
+         << "qs: Quick sort" << endl
+         << "r #: Remove item" << endl
          << "q: Quit" << endl;
 }
 
@@ -136,11 +171,28 @@ void quickInsert(deque<listObject>& objectList)
 
         // Prompt for a new item
         cout << "Enter a new item ('/q' to quit):" << endl;
-        cin >> myStr;
+        getline(cin, myStr);
     }
     while(myStr != "/q");
 
     cout << endl;
+}
+
+// Interactive comparison operator
+bool interactiveComp(const listObject& a, const listObject& b)
+{
+    // Ask the user where to place the item
+    cout << "Is " << a.label
+         << " more important than "
+         << b.label << "? (y/n)"
+         << endl;
+
+    char ans;
+    cin >> ans;
+    while(ans != 'y' && ans != 'n')
+        cout << "Invalid response." << endl;
+
+    return ans == 'y';
 }
 
 // Insert and sort objects into sorted list
@@ -163,18 +215,10 @@ void sortedInsert(deque<listObject>& objectList)
                 int mid = (beg + end) / 2;
                 listObject thisObj = *(objectList.begin() + mid);
                 
-                // Ask the user where to place the item
-                cout << "Is " << myObj.label
-                     << " more important than "
-                     << thisObj.label << "? (y/n)"
-                     << endl;
-
-                char ans;
-                cin >> ans;
-
-                if(ans == 'y')
+                // Compare the objects
+                if(interactiveComp(myObj, thisObj))
                     end = mid-1;
-                else if(ans == 'n')
+                else
                     beg = mid+1;
             }
 
@@ -187,9 +231,38 @@ void sortedInsert(deque<listObject>& objectList)
 
         // Prompt for a new item
         cout << "Enter a new item ('/q' to quit):" << endl;
-        cin >> myStr;
+        getline(cin, myStr);
     }
     while(myStr != "/q");
 
     cout << endl;
+}
+
+// Load the list from a saved file
+void loadFile(deque<listObject>& objectList)
+{
+    // Open the file
+    ifstream fin;
+    fin.open("listFile");
+
+    // Read items and store in list
+    objectList.clear();
+    string objLabel;
+    while(getline(fin, objLabel))
+        objectList.push_back(listObject(objLabel));
+}
+
+// Save the list to a file
+void saveFile(const deque<listObject>& objectList)
+{
+    // Open file
+    ofstream fout;
+    fout.open("listFile");
+
+    // Iterate through the list and write the items to file
+    for(deque<listObject>::const_iterator it = objectList.begin();
+                                          it != objectList.end(); ++it)
+    {
+        fout << it->label << endl;
+    }
 }
