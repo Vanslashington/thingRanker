@@ -1,17 +1,8 @@
 /*
     thingRanker
     David Vaughan
-    11/13/2014
+    12/5/2014
 */
-
-
-/*
-    To Do Before Next Commit:
-
-    Fix command inputting
-    Execute main in the proper order
-*/
-
 
 #include <iostream>
 #include <string>
