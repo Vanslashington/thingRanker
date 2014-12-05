@@ -5,9 +5,15 @@
 */
 
 
+/*
+    To Do Before Next Commit:
+
+    Fix command inputting
+    Execute main in the proper order
+*/
+
+
 #include <iostream>
-#include <set>
-#include <list>
 #include <string>
 #include <deque>
 #include <algorithm>
@@ -26,8 +32,8 @@ void displayHelp();
 void quickInsert(deque<listObject>& objectList);
 bool interactiveComp(const listObject& a, const listObject& b);
 void sortedInsert(deque<listObject>& objectList);
-void loadFile(deque<listObject>& objectList);
-void saveFile(const deque<listObject>& objectList);
+void loadFile(string file, deque<listObject>& objectList);
+void saveFile(string file, const deque<listObject>& objectList);
 
 
 /*
@@ -64,51 +70,83 @@ int listObject::maxIndex = 0;
 // Main
 int main()
 {
-    // The list that will hold all the objects
-    deque<listObject> objectList;
+    // List to hold all the list files
+    deque<listObject> fileList;
+    loadFile(string("fileList"), fileList);
 
-    // Load the saved file
-    loadFile(objectList);
-
-    // Main loop
-    string command = "";
+    
+    int listChoice;
     do
     {
-        // Execute the previously-entered command
-        if(command == "h")
-            displayHelp();
-        else if(command == "qi")
-            quickInsert(objectList);
-        else if(command == "si")
-            sortedInsert(objectList);
-        else if(command == "qs")
-            sort(objectList.begin(), objectList.end());
-        else if(command[0] == 'r')
+        // Ask the user which list to view
+        cout << "Saved Lists:" << endl;
+        displayList(fileList);
+        cout << "Type the number of the list to edit."
+             << endl << "(-1 for a new list, -2 to quit)" 
+             << endl;
+
+        // Get the file name, or push a new one onto the list
+        string listName;
+        cin >> listChoice;
+        cin.ignore();
+
+        if(listChoice == -2)
+            break;
+
+        if(listChoice == -1)
         {
-            stringstream comStream(command);
-            char trash;
-            int index;
-            comStream >> trash >> index;
-            objectList.erase(objectList.begin() + index);
+            cout << "List Name: ";
+            getline(cin, listName);
+            fileList.push_back(listObject(listName));
         }
-        else if(command == "")
-            { /* do nothing */ }
-        else if(command == "q")
-            { /* do nothing */ }
-        else
-            cout << "Invalid command." << endl << endl;
+        else listName = fileList[listChoice].label;
 
-        // Show the list
-        displayList(objectList);
+        // The list that will hold all the objects
+        deque<listObject> objectList; 
+        loadFile(listName, objectList);
 
-        // Prompt for a new command
-        cout << "Type 'h' for help and commands." << endl;
-        getline(cin, command);
+        // Main loop
+        string command;
+        do
+        {
+            // Show the list
+            displayList(objectList);
+
+            // Prompt for a new command
+            cout << "Type 'h' for help and commands." << endl;
+            getline(cin, command);
+
+            // Execute the previously-entered command
+            if(command == "h")
+                displayHelp();
+            else if(command == "qi")
+                quickInsert(objectList);
+            else if(command == "si")
+                sortedInsert(objectList);
+            else if(command == "qs")
+                sort(objectList.begin(), objectList.end());
+            else if(command[0] == 'r')
+            {
+                stringstream comStream(command);
+                char trash;
+                int index;
+                comStream >> trash >> index;
+                objectList.erase(objectList.begin() + index);
+            }
+            else if(command == "q")
+                { /* do nothing */ }
+            else
+                cout << "Invalid command." << endl << endl;
+        }
+        while(command != "q");
+
+        // Save the list to the file
+        saveFile(listName, objectList);
     }
-    while(command != "q");
+    while(listChoice != -2);
 
-    // Save the list to the file
-    saveFile(objectList);
+    // Save the file list
+    saveFile(string("fileList"), fileList);
 
     return 0;
 }
@@ -189,6 +227,8 @@ bool interactiveComp(const listObject& a, const listObject& b)
 
     char ans;
     cin >> ans;
+    cin.ignore();
+
     while(ans != 'y' && ans != 'n')
         cout << "Invalid response." << endl;
 
@@ -239,11 +279,11 @@ void sortedInsert(deque<listObject>& objectList)
 }
 
 // Load the list from a saved file
-void loadFile(deque<listObject>& objectList)
+void loadFile(string file, deque<listObject>& objectList)
 {
     // Open the file
     ifstream fin;
-    fin.open("listFile");
+    fin.open(file.c_str());
 
     // Read items and store in list
     objectList.clear();
@@ -253,11 +293,11 @@ void loadFile(deque<listObject>& objectList)
 }
 
 // Save the list to a file
-void saveFile(const deque<listObject>& objectList)
+void saveFile(string file, const deque<listObject>& objectList)
 {
     // Open file
     ofstream fout;
-    fout.open("listFile");
+    fout.open(file.c_str());
 
     // Iterate through the list and write the items to file
     for(deque<listObject>::const_iterator it = objectList.begin();
@@ -266,3 +306,4 @@ void saveFile(const deque<listObject>& objectList)
         fout << it->label << endl;
     }
 }
+
